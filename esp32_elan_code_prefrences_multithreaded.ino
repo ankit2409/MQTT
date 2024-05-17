@@ -42,6 +42,8 @@ int sensorPin = 5;
 String machineSiteId = "HDR-01";
 const char* machineTopic = "PMP_data_test_HDR-01";
 
+const char* wifiStatus = "WiFi NA";
+
 
 
 Preferences preferences;
@@ -89,6 +91,7 @@ void setup_wifi() {
   }
   randomSeed(micros());
   Serial.println("\nWiFi connected\nIP address: ");
+  wifiStatus = "WiFi Conn..";
   Serial.println(WiFi.localIP());
 }
 
@@ -132,6 +135,7 @@ void setup() {
   client.setServer(mqtt_server, mqtt_port);
   
   client.subscribe(machineTopic);
+  client.setKeepAlive(MQTT_KEEP_ALIVE_INTERVAL);
   count = 0 ;
 
   lcd.init();                      // initialize the lcd 
@@ -158,7 +162,9 @@ void loop() {
   lcd.setCursor(0,0);
   lcd.print(machineSiteId);
   lcd.setCursor(7,0);
-  lcd.print(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+  lcd.print(&timeinfo, "%H:%M:%S");
+  lcd.setCursor(7,1);
+  lcd.print(wifiStatus);
   
   int sensorValue = digitalRead(sensorPin);
   
@@ -174,16 +180,20 @@ void loop() {
   }
   lastSensorValue = sensorValue;
 
-  lcd.setCursor(0,3);
+  lcd.setCursor(0,1);
   lcd.print(count);
     
 }
+
+
 
 void publishMqttMessage(void * parameter) {
   while(true){
 
     Serial.println(" WiFi status: " + String(WiFi.status()));
     if (WiFi.status() != WL_CONNECTED) {
+      lcd.clear();
+      wifiStatus = "WiFi NA";
       Serial.println("Not connected to Wi-Fi. Reconnecting...");
       setup_wifi(); // Reconnect to Wi-Fi
       configTime(gmtOffset_sec, daylightOffset_sec, ntpServer); //configure time 
